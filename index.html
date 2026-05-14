@@ -487,6 +487,69 @@
       background: #f8fafc;
     }
 
+
+    .layout-tab-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin: 0 0 16px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+
+    .layout-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 0;
+    }
+
+    .naildown-tab-warning {
+      flex: 1 1 230px;
+      max-width: 320px;
+      border: 1px solid var(--warning-border);
+      background: var(--warning);
+      border-radius: 12px;
+      padding: 9px 11px;
+      color: #7c2d12;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .naildown-tab-warning strong {
+      display: block;
+      font-size: 12.5px;
+      margin-bottom: 2px;
+    }
+
+    .layout-tab-btn {
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: #f1f5f9;
+      color: #334155;
+      box-shadow: none;
+      font-size: 13px;
+      line-height: 1.1;
+    }
+
+    .layout-tab-btn.active {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(216, 74, 43, .18);
+    }
+
+    .layout-tab-btn small {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      opacity: .86;
+      margin-top: 3px;
+    }
+
     .print-actions {
       display: flex;
       justify-content: flex-end;
@@ -579,6 +642,7 @@
       .hero, .calculator { grid-template-columns: 1fr; }
       .summary { grid-template-columns: 1fr; }
       .field-grid { grid-template-columns: 1fr; }
+      .naildown-tab-warning { max-width: none; flex-basis: 100%; }
     }
   </style>
 </head>
@@ -626,7 +690,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="nailDown">Nail-down flooring?</label>
+              <label for="nailDown">Nail-down/assist or Glue-Assist?</label>
               <select id="nailDown" required>
                 <option value="No" selected>No</option>
                 <option value="Yes">Yes</option>
@@ -790,6 +854,7 @@
     const layoutHelpCta = document.getElementById('layoutHelpCta');
     const resultsEl = document.getElementById('results');
     let lastRecommendation = null;
+    let activeLayoutTab = 'recommended';
 
     roomShapeEl.addEventListener('change', updateFieldVisibility);
     document.getElementById('resetBtn').addEventListener('click', resetForm);
@@ -812,6 +877,7 @@
         openLayoutHelpModal();
         return;
       }
+      activeLayoutTab = 'recommended';
       const recommendation = generateWarmStepRecommendation(inputs, products, settings);
       lastRecommendation = recommendation;
       renderResults(recommendation);
@@ -861,7 +927,6 @@
       let targetSqFt = 0;
       let maxRun = 0;
       let usableWidthIn = 0;
-      let layoutOrientation = null;
 
       if (inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles') {
         targetSqFt = inputs.heatedLengthFt * inputs.heatedWidthFt;
@@ -892,20 +957,6 @@
         }
       }
 
-      if (inputs.roomShape !== 'Open Floor Plan/Rectangular with No Obstacles') {
-        if (!maxRun || maxRun <= 0) {
-          return errorResult('Enter the longest straight heated run in feet.', warnings, targetSqFt);
-        }
-        if (!usableWidthIn || usableWidthIn <= 0) {
-          return errorResult('Enter the narrowest usable heated width in inches.', warnings, targetSqFt);
-        }
-        if (usableWidthIn < 18) {
-          return errorResult('Layout review required', [
-            'The narrowest usable heated width is under 18 inches. Standard WarmStep mats may not fit this layout. A loose cable solution may be a better fit.'
-          ], targetSqFt);
-        }
-      }
-
       const maxCoverage = settings.maxCoverageByVoltage[inputs.voltage];
       if (targetSqFt > maxCoverage) {
         return errorResult('Layout review required', [
@@ -913,136 +964,110 @@
         ], targetSqFt, true, true);
       }
 
-      let best = null;
-
-      if (inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles') {
-        const orientations = [
-          {
-            name: 'Lengthwise',
-            description: `Suggested layout: mats run along the ${inputs.heatedLengthFt} ft dimension, side-by-side across the ${inputs.heatedWidthFt} ft dimension.`,
-            maxRun: inputs.heatedLengthFt,
-            laneCapacityIn: inputs.heatedWidthFt * 12
-          },
-          {
-            name: 'Widthwise',
-            description: `Suggested layout: mats run along the ${inputs.heatedWidthFt} ft dimension, side-by-side across the ${inputs.heatedLengthFt} ft dimension.`,
-            maxRun: inputs.heatedWidthFt,
-            laneCapacityIn: inputs.heatedLengthFt * 12
-          }
-        ];
-
-        orientations.forEach(orientation => {
-          const eligible = products.filter(p =>
-            p.voltage === inputs.voltage &&
-            p.lengthFt <= orientation.maxRun &&
-            p.widthIn <= orientation.laneCapacityIn
-          );
-
-          const candidate = findBestCart(eligible, targetSqFt, settings, orientation.laneCapacityIn, orientation.maxRun);
-          if (!candidate) return;
-
-          candidate.layoutOrientation = orientation.name;
-          candidate.layoutDescription = buildSimpleLayoutDescription(inputs, candidate, orientation);
-          candidate.maxRun = orientation.maxRun;
-          candidate.laneCapacityIn = orientation.laneCapacityIn;
-
-          if (!best || isBetterCart(candidate, best, targetSqFt)) {
-            best = candidate;
-          }
-        });
-
-        if (!best) {
-          let bestPartial = null;
-
-          orientations.forEach(orientation => {
-            const eligible = products.filter(p =>
-              p.voltage === inputs.voltage &&
-              p.lengthFt <= orientation.maxRun &&
-              p.widthIn <= orientation.laneCapacityIn
-            );
-
-            const candidate = findBestPartialCart(eligible, targetSqFt, settings, orientation.laneCapacityIn, orientation.maxRun);
-            if (!candidate) return;
-
-            candidate.layoutOrientation = orientation.name;
-            candidate.layoutDescription = buildSimpleLayoutDescription(inputs, candidate, orientation);
-            candidate.maxRun = orientation.maxRun;
-            candidate.laneCapacityIn = orientation.laneCapacityIn;
-            candidate.isPartial = true;
-
-            if (!bestPartial || isBetterPartialCart(candidate, bestPartial, targetSqFt)) {
-              bestPartial = candidate;
-            }
-          });
-
-          if (!bestPartial) {
-            return errorResult('No valid cart found', [
-              'No mat combination fit within the current tolerance settings and room dimensions. Consider requesting layout review or using a loose cable solution for a more flexible layout.'
-            ], targetSqFt);
-          }
-
-          best = bestPartial;
+      const orientations = [
+        {
+          name: 'Lengthwise',
+          maxRun: inputs.heatedLengthFt,
+          laneCapacityIn: inputs.heatedWidthFt * 12
+        },
+        {
+          name: 'Widthwise',
+          maxRun: inputs.heatedWidthFt,
+          laneCapacityIn: inputs.heatedLengthFt * 12
         }
+      ];
 
-        layoutOrientation = best.layoutOrientation;
-        maxRun = best.maxRun;
-        usableWidthIn = best.laneCapacityIn;
-      } else {
-        const eligible = products.filter(p =>
-          p.voltage === inputs.voltage &&
-          p.lengthFt <= maxRun &&
-          p.widthIn <= usableWidthIn
-        );
+      const orientationResults = orientations.map(orientation =>
+        buildOrientationRecommendation(inputs, orientation, targetSqFt)
+      ).filter(Boolean);
 
-        if (!eligible.length) {
-          return errorResult('No eligible SKUs found', [
-            'No eligible WarmStep mats were found for the selected voltage, run length, and usable width. A loose cable solution may be a better fit for this layout.'
-          ], targetSqFt);
-        }
+      const validOrientationResults = orientationResults.filter(option => option.cart && option.cart.length && !option.requiresLayoutReview);
 
-        best = findBestCart(eligible, targetSqFt, settings, null, maxRun);
-        if (!best) {
-          const partial = findBestPartialCart(eligible, targetSqFt, settings, null, maxRun);
-          if (!partial) {
-            return errorResult('No valid cart found', [
-              'No mat combination fit within the current tolerance settings. Consider increasing overage tolerance, requesting layout review, or using a loose cable solution for a more flexible layout.'
-            ], targetSqFt);
-          }
-          best = partial;
-          best.isPartial = true;
-        }
-      }
-
-      if (inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles' && isPatchworkPartialRecommendation(best)) {
+      if (!validOrientationResults.length) {
         return errorResult('Layout review required', [
-          'The entered dimensions do not produce a clean WarmStep mat layout using standard mat sizes. Rather than showing an awkward patchwork recommendation, please contact ThermoSoft for assistance or send us your layout so we can recommend the right mat plan.',
+          'The entered dimensions do not produce a clean WarmStep mat layout using standard mat sizes. Please contact ThermoSoft for assistance or send us your layout so we can recommend the right mat plan.',
           'WarmStep mats cannot be shortened and should not run under permanent fixtures, so final placement should be confirmed before ordering.'
         ], targetSqFt, true, true);
       }
 
-      if (inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles') {
-        warnings.push(best.layoutDescription);
-      }
+      let recommended = validOrientationResults[0];
+      validOrientationResults.slice(1).forEach(candidate => {
+        if (isBetterOrientationRecommendation(candidate, recommended, targetSqFt)) {
+          recommended = candidate;
+        }
+      });
 
-      if (best.isPartial) {
-        warnings.push('Closest practical mat fit shown. When full coverage is not possible with a clean layout, the tool favors a simpler mat plan over adding several short or mixed-width mats for only a small coverage gain. Confirm final placement before ordering.');
-      }
+      const alternate = orientationResults.find(option => option.layoutOrientation !== recommended.layoutOrientation) || null;
+      recommended.optionKey = 'recommended';
+      recommended.tabLabel = 'Recommended Layout';
+      recommended.layoutPreviewTitle = 'Recommended layout concept';
 
-
-      if (inputs.nailDown) {
-        warnings.push('Nail-down flooring requires special layout planning. WarmStep mats must run perpendicular to the flooring boards. Please confirm layout direction before ordering.');
-      }
-
-      if (inputs.roomShape !== 'Open Floor Plan/Rectangular with No Obstacles') {
-        warnings.push('Recommendation only uses mats at or below the longest straight heated run entered. Longer mats may fit elsewhere if layout allows.');
-      }
-
-      if (usableWidthIn < 36 && usableWidthIn >= 18) {
-        warnings.push('36-inch mats were excluded because the narrowest usable heated width is under 36 inches. The recommendation is limited to 18-inch mats.');
+      const layoutOptions = [recommended];
+      if (alternate) {
+        alternate.optionKey = 'alternate';
+        alternate.tabLabel = 'Alternate Layout';
+        alternate.layoutPreviewTitle = alternate.cart && alternate.cart.length ? 'Alternate layout concept' : 'Alternate layout unavailable';
+        layoutOptions.push(alternate);
       }
 
       return {
-        status: best.isPartial ? 'Closest physical fit' : (inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles' ? 'Valid recommendation' : 'Preliminary recommendation - layout review required'),
+        ...recommended,
+        layoutOptions
+      };
+    }
+
+    function buildOrientationRecommendation(inputs, orientation, targetSqFt) {
+      const eligible = products.filter(p =>
+        p.voltage === inputs.voltage &&
+        p.lengthFt <= orientation.maxRun &&
+        p.widthIn <= orientation.laneCapacityIn
+      );
+
+      if (!eligible.length) {
+        return buildOrientationUnavailableResult(inputs, orientation, targetSqFt, [
+          'This direction does not have eligible WarmStep mats for the selected voltage and dimensions.'
+        ]);
+      }
+
+      let candidate = findBestCart(eligible, targetSqFt, settings, orientation.laneCapacityIn, orientation.maxRun);
+      if (!candidate) {
+        candidate = findBestPartialCart(eligible, targetSqFt, settings, orientation.laneCapacityIn, orientation.maxRun);
+        if (candidate) candidate.isPartial = true;
+      }
+
+      if (!candidate) {
+        return buildOrientationUnavailableResult(inputs, orientation, targetSqFt, [
+          'This direction does not produce a valid WarmStep mat fit within the current room dimensions and tolerance settings.'
+        ]);
+      }
+
+      candidate.layoutOrientation = orientation.name;
+      candidate.layoutDescription = buildSimpleLayoutDescription(inputs, candidate, orientation);
+      candidate.maxRun = orientation.maxRun;
+      candidate.laneCapacityIn = orientation.laneCapacityIn;
+
+      if (isPatchworkPartialRecommendation(candidate)) {
+        return buildOrientationUnavailableResult(inputs, orientation, targetSqFt, [
+          'This direction would require an awkward patchwork-style mat layout, so it should be reviewed by ThermoSoft before ordering.',
+          'WarmStep mats cannot be shortened and should not run under permanent fixtures.'
+        ]);
+      }
+
+      const optionWarnings = [candidate.layoutDescription];
+      if (candidate.isPartial) {
+        optionWarnings.push('Closest practical mat fit shown. When full coverage is not possible with a clean layout, the tool favors a simpler mat plan over adding several short or mixed-width mats for only a small coverage gain. Confirm final placement before ordering.');
+      }
+
+      if (orientation.laneCapacityIn < 36 && orientation.laneCapacityIn >= 18) {
+        optionWarnings.push('36-inch mats were excluded because the usable heated width in this direction is under 36 inches. The recommendation is limited to 18-inch mats.');
+      }
+
+      return buildRecommendationFromCandidate(inputs, candidate, targetSqFt, optionWarnings);
+    }
+
+    function buildRecommendationFromCandidate(inputs, best, targetSqFt, warnings) {
+      return {
+        status: best.isPartial ? 'Closest physical fit' : 'Valid recommendation',
         targetSqFt,
         recommendedCoverage: best.coverage,
         totalWatts: calculateCartWatts(best.cart),
@@ -1051,18 +1076,63 @@
         fitPercent: (best.coverage - targetSqFt) / targetSqFt,
         voltage: inputs.voltage,
         matCount: best.matCount,
-        layoutOrientation,
+        layoutOrientation: best.layoutOrientation,
         laneWidthIn: best.laneWidthIn,
-        maxRunFt: maxRun,
-        laneCapacityIn: usableWidthIn,
-        isSimpleRoom: inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles',
-        roomLengthFt: inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles' ? inputs.heatedLengthFt : null,
-        roomWidthFt: inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles' ? inputs.heatedWidthFt : null,
+        maxRunFt: best.maxRun,
+        laneCapacityIn: best.laneCapacityIn,
+        isSimpleRoom: true,
+        roomLengthFt: inputs.heatedLengthFt,
+        roomWidthFt: inputs.heatedWidthFt,
         cart: best.cart,
         requiresLayoutReview: false,
         showContactAssistance: false,
-        warnings
+        nailDown: inputs.nailDown,
+        warnings,
+        _candidate: best
       };
+    }
+
+    function buildOrientationUnavailableResult(inputs, orientation, targetSqFt, warnings) {
+      return {
+        status: 'Alternate layout unavailable',
+        targetSqFt,
+        recommendedCoverage: 0,
+        totalWatts: 0,
+        totalAmps: 0,
+        fitSqFt: 0,
+        fitPercent: 0,
+        voltage: inputs.voltage,
+        matCount: 0,
+        layoutOrientation: orientation.name,
+        laneWidthIn: 0,
+        maxRunFt: orientation.maxRun,
+        laneCapacityIn: orientation.laneCapacityIn,
+        isSimpleRoom: true,
+        roomLengthFt: inputs.heatedLengthFt,
+        roomWidthFt: inputs.heatedWidthFt,
+        cart: [],
+        requiresLayoutReview: false,
+        showContactAssistance: true,
+        nailDown: inputs.nailDown,
+        warnings,
+        _candidate: null
+      };
+    }
+
+    function isBetterOrientationRecommendation(candidate, currentBest, targetSqFt) {
+      if (candidate.cart.length && !currentBest.cart.length) return true;
+      if (!candidate.cart.length && currentBest.cart.length) return false;
+
+      const candidatePartial = !!(candidate._candidate && candidate._candidate.isPartial);
+      const currentPartial = !!(currentBest._candidate && currentBest._candidate.isPartial);
+      if (!candidatePartial && currentPartial) return true;
+      if (candidatePartial && !currentPartial) return false;
+
+      if (candidatePartial && currentPartial) {
+        return isBetterPartialCart(candidate._candidate, currentBest._candidate, targetSqFt);
+      }
+
+      return isBetterCart(candidate._candidate, currentBest._candidate, targetSqFt);
     }
 
     function buildSimpleLayoutDescription(inputs, candidate, orientation) {
@@ -1404,13 +1474,19 @@
 
 
     function buildLayoutPreviewHtml(result) {
-      if (!result.cart.length || !result.isSimpleRoom || !result.maxRunFt || !result.laneCapacityIn) return '';
+      if (!result.cart.length || !result.isSimpleRoom || !result.roomLengthFt || !result.roomWidthFt) return '';
 
-      const roomRunFt = result.maxRunFt;
-      const roomLaneFt = result.laneCapacityIn / 12;
-      const lanes = packMatsIntoPreviewLanes(result.cart, roomRunFt);
+      // Keep the room perspective fixed for both tabs:
+      // horizontal axis = entered desired heated length, vertical axis = entered desired heated width.
+      // The Recommended and Alternate tabs rotate only the mat direction inside the same room rectangle.
+      const roomLengthFt = result.roomLengthFt;
+      const roomWidthFt = result.roomWidthFt;
+      const matsRunLengthwise = result.layoutOrientation === 'Lengthwise';
+      const matRunFt = matsRunLengthwise ? roomLengthFt : roomWidthFt;
+      const matLaneCapacityFt = matsRunLengthwise ? roomWidthFt : roomLengthFt;
+      const lanes = packMatsIntoPreviewLanes(result.cart, matRunFt);
       const usedLaneFt = lanes.reduce((sum, lane) => sum + lane.widthIn / 12, 0);
-      const uncoveredLaneFt = Math.max(0, roomLaneFt - usedLaneFt);
+      const uncoveredLaneFt = Math.max(0, matLaneCapacityFt - usedLaneFt);
 
       const viewWidth = 760;
       const padLeft = 62;
@@ -1418,64 +1494,118 @@
       const padTop = 42;
       const padBottom = 46;
       const drawingWidth = viewWidth - padLeft - padRight;
-      const drawingHeight = Math.max(210, Math.min(370, drawingWidth * (roomLaneFt / roomRunFt) * 1.18));
+      const drawingHeight = Math.max(210, Math.min(370, drawingWidth * (roomWidthFt / roomLengthFt) * 1.18));
       const viewHeight = drawingHeight + padTop + padBottom;
-      const sx = drawingWidth / roomRunFt;
-      const sy = drawingHeight / roomLaneFt;
+      const sx = drawingWidth / roomLengthFt;
+      const sy = drawingHeight / roomWidthFt;
 
       const heatedColor = '#fed7aa';
       const heatedStroke = '#d84a2b';
       const unusedColor = '#e2e8f0';
       const roomStroke = '#334155';
 
-      const laneSummary = summarizePreviewLanes(lanes);
-      const usedWidthLabel = `${formatNumber(usedLaneFt)} ft heated width shown${uncoveredLaneFt > 0.01 ? ` / ${formatNumber(uncoveredLaneFt)} ft unheated strip` : ''}`;
-
       let svgParts = [];
-      let y = padTop;
 
-      lanes.forEach((lane) => {
-        const laneHeight = (lane.widthIn / 12) * sy;
-        let x = padLeft;
-        const labelFont = Math.max(15, Math.min(22, laneHeight * 0.44));
-        const dimensionFont = Math.max(10, Math.min(14, laneHeight * 0.26));
-
-        lane.mats.forEach((mat) => {
-          const w = mat.lengthFt * sx;
-          const label = mat.sku.replace('-240B', '').replace('-120B', '');
-          const canShowText = w >= 62 && laneHeight >= 20;
-          const canShowDimension = w >= 74 && laneHeight >= 22;
-
-          svgParts.push(`
-            <rect x="${x}" y="${y}" width="${Math.max(1, w)}" height="${Math.max(1, laneHeight)}" rx="8" fill="${heatedColor}" stroke="${heatedStroke}" stroke-width="1.8"></rect>
-            ${canShowDimension ? `<text x="${x + 10}" y="${y + Math.max(17, laneHeight * 0.32)}" text-anchor="start" font-size="${dimensionFont}" font-weight="800" fill="#92400e" opacity="0.95">${formatNumber(mat.lengthFt)} ft × ${formatWidthFt(mat.widthIn)}</text>` : ''}
-            ${canShowText ? `<text x="${x + w / 2}" y="${y + laneHeight / 2 + 7}" text-anchor="middle" font-size="${labelFont}" font-weight="800" fill="#7c2d12">${escapeHtml(label)}</text>` : ''}
-          `);
-          x += w;
-        });
-
-        if (x < padLeft + drawingWidth - 0.5) {
-          svgParts.push(`<rect x="${x}" y="${y}" width="${padLeft + drawingWidth - x}" height="${Math.max(1, laneHeight)}" fill="${unusedColor}" opacity="0.75"></rect>`);
-        }
-        y += laneHeight;
-      });
-
-      if (uncoveredLaneFt > 0.01) {
-        const uncoveredHeight = uncoveredLaneFt * sy;
-        const label = `Approx. ${formatNumber(uncoveredLaneFt)} ft unheated strip`;
+      function addUnheatedRect(x, y, width, height, label = '') {
+        if (width <= 0.5 || height <= 0.5) return;
         svgParts.push(`
-          <rect x="${padLeft}" y="${y}" width="${drawingWidth}" height="${Math.max(1, uncoveredHeight)}" fill="${unusedColor}" stroke="#cbd5e1" stroke-dasharray="5 4"></rect>
-          ${uncoveredHeight >= 18 ? `<text x="${padLeft + drawingWidth / 2}" y="${y + uncoveredHeight / 2 + 5}" text-anchor="middle" font-size="15" font-weight="800" fill="#64748b">${escapeHtml(label)}</text>` : ''}
+          <rect x="${x}" y="${y}" width="${Math.max(1, width)}" height="${Math.max(1, height)}" fill="${unusedColor}" opacity="0.75" stroke="#cbd5e1" stroke-dasharray="5 4"></rect>
+          ${label && width >= 54 && height >= 18 ? `<text x="${x + width / 2}" y="${y + height / 2 + 5}" text-anchor="middle" font-size="12" font-weight="800" fill="#64748b">${escapeHtml(label)}</text>` : ''}
         `);
       }
 
-      const roomLabel = result.layoutOrientation === 'Lengthwise'
-        ? `${formatNumber(result.roomLengthFt)} ft × ${formatNumber(result.roomWidthFt)} ft room`
-        : `${formatNumber(result.roomWidthFt)} ft × ${formatNumber(result.roomLengthFt)} ft room`;
+      if (matsRunLengthwise) {
+        const topBottomUnheatedFt = uncoveredLaneFt / 2;
+        let y = padTop + (topBottomUnheatedFt * sy);
 
-      const runDirectionLabel = result.layoutOrientation === 'Lengthwise'
-        ? `Mats run along the ${formatNumber(result.roomLengthFt)} ft dimension`
-        : `Mats run along the ${formatNumber(result.roomWidthFt)} ft dimension`;
+        if (topBottomUnheatedFt > 0.01) {
+          const stripHeight = topBottomUnheatedFt * sy;
+          const stripLabel = `Approx. ${formatNumber(topBottomUnheatedFt)} ft unheated strip`;
+          addUnheatedRect(padLeft, padTop, drawingWidth, stripHeight, stripLabel);
+          addUnheatedRect(padLeft, padTop + drawingHeight - stripHeight, drawingWidth, stripHeight, stripLabel);
+        }
+
+        lanes.forEach((lane) => {
+          const laneHeight = (lane.widthIn / 12) * sy;
+          const laneUsedRunFt = lane.totalLengthFt;
+          const sideUnheatedFt = Math.max(0, roomLengthFt - laneUsedRunFt) / 2;
+          let x = padLeft + (sideUnheatedFt * sx);
+          const labelFont = Math.max(15, Math.min(22, laneHeight * 0.44));
+          const dimensionFont = Math.max(10, Math.min(14, laneHeight * 0.26));
+
+          if (sideUnheatedFt > 0.01) {
+            const sideWidth = sideUnheatedFt * sx;
+            const sideLabel = `Approx. ${formatNumber(sideUnheatedFt)} ft`;
+            addUnheatedRect(padLeft, y, sideWidth, laneHeight, sideLabel);
+            addUnheatedRect(padLeft + drawingWidth - sideWidth, y, sideWidth, laneHeight, sideLabel);
+          }
+
+          lane.mats.forEach((mat) => {
+            const w = mat.lengthFt * sx;
+            const label = mat.sku.replace('-240B', '').replace('-120B', '');
+            const canShowText = w >= 62 && laneHeight >= 20;
+            const canShowDimension = w >= 74 && laneHeight >= 22;
+
+            svgParts.push(`
+              <rect x="${x}" y="${y}" width="${Math.max(1, w)}" height="${Math.max(1, laneHeight)}" rx="8" fill="${heatedColor}" stroke="${heatedStroke}" stroke-width="1.8"></rect>
+              ${canShowDimension ? `<text x="${x + 10}" y="${y + Math.max(17, laneHeight * 0.32)}" text-anchor="start" font-size="${dimensionFont}" font-weight="800" fill="#92400e" opacity="0.95">${formatNumber(mat.lengthFt)} ft × ${formatWidthFt(mat.widthIn)}</text>` : ''}
+              ${canShowText ? `<text x="${x + w / 2}" y="${y + laneHeight / 2 + 7}" text-anchor="middle" font-size="${labelFont}" font-weight="800" fill="#7c2d12">${escapeHtml(label)}</text>` : ''}
+            `);
+            x += w;
+          });
+
+          y += laneHeight;
+        });
+      } else {
+        const leftRightUnheatedFt = uncoveredLaneFt / 2;
+        let x = padLeft + (leftRightUnheatedFt * sx);
+
+        if (leftRightUnheatedFt > 0.01) {
+          const stripWidth = leftRightUnheatedFt * sx;
+          const stripLabel = `Approx. ${formatNumber(leftRightUnheatedFt)} ft`;
+          addUnheatedRect(padLeft, padTop, stripWidth, drawingHeight, stripLabel);
+          addUnheatedRect(padLeft + drawingWidth - stripWidth, padTop, stripWidth, drawingHeight, stripLabel);
+        }
+
+        lanes.forEach((lane) => {
+          const laneWidth = (lane.widthIn / 12) * sx;
+          const laneUsedRunFt = lane.totalLengthFt;
+          const topBottomUnheatedFt = Math.max(0, roomWidthFt - laneUsedRunFt) / 2;
+          let y = padTop + (topBottomUnheatedFt * sy);
+          const labelFont = Math.max(14, Math.min(21, laneWidth * 0.34));
+          const dimensionFont = Math.max(10, Math.min(13, laneWidth * 0.22));
+
+          if (topBottomUnheatedFt > 0.01) {
+            const stripHeight = topBottomUnheatedFt * sy;
+            const stripLabel = `Approx. ${formatNumber(topBottomUnheatedFt)} ft`;
+            addUnheatedRect(x, padTop, laneWidth, stripHeight, stripLabel);
+            addUnheatedRect(x, padTop + drawingHeight - stripHeight, laneWidth, stripHeight, stripLabel);
+          }
+
+          lane.mats.forEach((mat) => {
+            const h = mat.lengthFt * sy;
+            const label = mat.sku.replace('-240B', '').replace('-120B', '');
+            const canShowText = h >= 62 && laneWidth >= 24;
+            const canShowDimension = h >= 78 && laneWidth >= 48;
+            const cx = x + laneWidth / 2;
+            const cy = y + h / 2;
+
+            svgParts.push(`
+              <rect x="${x}" y="${y}" width="${Math.max(1, laneWidth)}" height="${Math.max(1, h)}" rx="8" fill="${heatedColor}" stroke="${heatedStroke}" stroke-width="1.8"></rect>
+              ${canShowDimension ? `<text x="${x + 8}" y="${y + 18}" text-anchor="start" font-size="${dimensionFont}" font-weight="800" fill="#92400e" opacity="0.95">${formatNumber(mat.lengthFt)} ft × ${formatWidthFt(mat.widthIn)}</text>` : ''}
+              ${canShowText ? `<text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="${labelFont}" font-weight="800" fill="#7c2d12" transform="rotate(-90 ${cx} ${cy})">${escapeHtml(label)}</text>` : ''}
+            `);
+            y += h;
+          });
+
+          x += laneWidth;
+        });
+      }
+
+      const roomLabel = `${formatNumber(roomLengthFt)} ft × ${formatNumber(roomWidthFt)} ft room`;
+      const runDirectionLabel = matsRunLengthwise
+        ? `Mats run left to right along the ${formatNumber(roomLengthFt)} ft dimension`
+        : `Mats run up and down along the ${formatNumber(roomWidthFt)} ft dimension`;
 
       const svg = `
         <svg viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Suggested WarmStep layout preview">
@@ -1483,13 +1613,14 @@
           ${svgParts.join('')}
           <text x="${padLeft + drawingWidth / 2}" y="${padTop - 24}" text-anchor="middle" font-size="16" font-weight="800" fill="#1f2933">${escapeHtml(roomLabel)}</text>
           <text x="${padLeft + drawingWidth / 2}" y="${padTop + drawingHeight + 34}" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">${escapeHtml(runDirectionLabel)}</text>
-          <text x="${padLeft - 36}" y="${padTop + drawingHeight / 2}" text-anchor="middle" font-size="13" font-weight="700" fill="#64748b" transform="rotate(-90 ${padLeft - 36} ${padTop + drawingHeight / 2})">Mat lanes / room width</text>
+          <text x="${padLeft - 36}" y="${padTop + drawingHeight / 2}" text-anchor="middle" font-size="13" font-weight="700" fill="#64748b" transform="rotate(-90 ${padLeft - 36} ${padTop + drawingHeight / 2})">Room width</text>
+          <text x="${padLeft + drawingWidth / 2}" y="${padTop + drawingHeight + 16}" text-anchor="middle" font-size="13" font-weight="700" fill="#64748b">Room length</text>
         </svg>
       `;
 
       return `
         <div class="layout-preview">
-          <h3>Suggested layout concept</h3>
+          <h3>${escapeHtml(result.layoutPreviewTitle || 'Suggested layout concept')}</h3>
           <p>For your convenience, here is the suggested layout. Full installation requires a thermostat and possibly additional accessories.</p>
           <div class="layout-svg-wrap">${svg}</div>
           <div class="layout-legend">
@@ -1579,10 +1710,47 @@
       `;
     }
 
+    function getActiveLayoutResult(result) {
+      if (!result || !result.layoutOptions || !result.layoutOptions.length) return result;
+      return result.layoutOptions.find(option => option.optionKey === activeLayoutTab) || result.layoutOptions[0];
+    }
+
+    function buildLayoutTabsHtml(result) {
+      if (!result || !result.layoutOptions || result.layoutOptions.length < 2) return '';
+      const showNailDownWarning = result.layoutOptions.some(option => option.nailDown);
+      const nailDownWarning = showNailDownWarning ? `
+        <div class="naildown-tab-warning">
+          <strong>Nail-down layout note</strong>
+          Mats must run perpendicular to the flooring boards. Confirm the direction before ordering.
+        </div>
+      ` : '';
+
+      return `
+        <div class="layout-tab-row">
+          <div class="layout-tabs" role="tablist" aria-label="WarmStep layout options">
+            ${result.layoutOptions.map(option => `
+              <button class="layout-tab-btn ${option.optionKey === activeLayoutTab ? 'active' : ''}" type="button" data-layout-option="${option.optionKey}" role="tab" aria-selected="${option.optionKey === activeLayoutTab ? 'true' : 'false'}">
+                ${escapeHtml(option.tabLabel || option.optionKey)}
+                <small>${escapeHtml(getLayoutTabSubtext(option))}</small>
+              </button>
+            `).join('')}
+          </div>
+          ${nailDownWarning}
+        </div>
+      `;
+    }
+
+    function getLayoutTabSubtext(option) {
+      if (!option || !option.layoutOrientation) return '';
+      const runFt = option.layoutOrientation === 'Lengthwise' ? option.roomLengthFt : option.roomWidthFt;
+      return option.cart && option.cart.length ? `Mats along ${formatNumber(runFt)} ft side` : 'Review needed';
+    }
+
     function renderResults(result) {
-      const isError = result.cart.length === 0 && result.status !== 'Valid recommendation';
-      const isWarning = result.status !== 'Valid recommendation';
-      const cartRows = result.cart.map(item => {
+      const displayResult = getActiveLayoutResult(result);
+      const isError = displayResult.cart.length === 0 && displayResult.status !== 'Valid recommendation';
+      const isWarning = displayResult.status !== 'Valid recommendation';
+      const cartRows = displayResult.cart.map(item => {
         const lineSqFt = item.lineCoverageSqFt || (item.qty * item.coverageSqFt);
         const lineWatts = calculateLineWatts(item);
         const lineAmps = calculateLineAmps(item);
@@ -1590,7 +1758,7 @@
           <tr>
             <td class="qty">${item.qty}</td>
             <td class="cart-sku">${item.sku}</td>
-            <td>${item.voltage || result.voltage}V</td>
+            <td>${item.voltage || displayResult.voltage}V</td>
             <td>${formatWidthFt(item.widthIn)}</td>
             <td>${formatNumber(item.lengthFt)} ft</td>
             <td>${formatNumber(lineSqFt)} sq ft</td>
@@ -1600,26 +1768,28 @@
         `;
       }).join('');
 
-      const warnings = result.warnings.map(w => `<div class="warning-box">${w}</div>`).join('');
-      const layoutPreview = buildLayoutPreviewHtml(result);
-      const systemNote = buildSystemNoteHtml(result);
-      const totalWatts = result.totalWatts || calculateCartWatts(result.cart);
-      const totalAmps = result.totalAmps || calculateCartAmps(result.cart);
+      const warnings = displayResult.warnings.map(w => `<div class="warning-box">${w}</div>`).join('');
+      const layoutTabs = buildLayoutTabsHtml(result);
+      const layoutPreview = buildLayoutPreviewHtml(displayResult);
+      const systemNote = buildSystemNoteHtml(displayResult);
+      const totalWatts = displayResult.totalWatts || calculateCartWatts(displayResult.cart);
+      const totalAmps = displayResult.totalAmps || calculateCartAmps(displayResult.cart);
 
-      const showStatusBar = result.status !== 'Valid recommendation' && result.status !== 'Closest physical fit';
+      const showStatusBar = displayResult.status !== 'Valid recommendation' && displayResult.status !== 'Closest physical fit';
 
       resultsEl.innerHTML = `
-        ${showStatusBar ? `<div class="status ${isError ? 'error' : isWarning ? 'warning' : ''}">${result.status}</div>` : ''}
-        ${result.showContactAssistance ? '<div class="review-action-row"><button class="review-action-button" type="button" id="contactAssistanceBtn">Contact Us for Assistance</button></div>' : ''}
+        ${layoutTabs}
+        ${showStatusBar ? `<div class="status ${isError ? 'error' : isWarning ? 'warning' : ''}">${displayResult.status}</div>` : ''}
+        ${displayResult.showContactAssistance ? '<div class="review-action-row"><button class="review-action-button" type="button" id="contactAssistanceBtn">Contact Us for Assistance</button></div>' : ''}
         <div class="summary">
-          <div class="metric"><span>Target</span><strong>${result.targetSqFt ? formatNumber(result.targetSqFt) : '-'} sq ft</strong></div>
-          <div class="metric"><span>Recommended</span><strong>${result.recommendedCoverage ? formatNumber(result.recommendedCoverage) : '-'} sq ft</strong></div>
-          <div class="metric"><span>Difference</span><strong>${formatDifference(result)}</strong></div>
-          <div class="metric"><span>Voltage</span><strong>${result.voltage ? result.voltage + 'V' : '-'}</strong></div>
-          ${result.cart.length ? `<div class="metric"><span>Total watts</span><strong>${formatWholeNumber(totalWatts)} W</strong></div>` : ''}
-          ${result.cart.length ? `<div class="metric"><span>Total amps</span><strong>${formatAmps(totalAmps)} A</strong></div>` : ''}
+          <div class="metric"><span>Target</span><strong>${displayResult.targetSqFt ? formatNumber(displayResult.targetSqFt) : '-'} sq ft</strong></div>
+          <div class="metric"><span>Recommended</span><strong>${displayResult.recommendedCoverage ? formatNumber(displayResult.recommendedCoverage) : '-'} sq ft</strong></div>
+          <div class="metric"><span>Difference</span><strong>${formatDifference(displayResult)}</strong></div>
+          <div class="metric"><span>Voltage</span><strong>${displayResult.voltage ? displayResult.voltage + 'V' : '-'}</strong></div>
+          ${displayResult.cart.length ? `<div class="metric"><span>Total watts</span><strong>${formatWholeNumber(totalWatts)} W</strong></div>` : ''}
+          ${displayResult.cart.length ? `<div class="metric"><span>Total amps</span><strong>${formatAmps(totalAmps)} A</strong></div>` : ''}
         </div>
-        ${result.cart.length ? `
+        ${displayResult.cart.length ? `
           <table class="recommendation-table">
             <colgroup>
               <col class="qty-col">
@@ -1642,10 +1812,17 @@
           ${systemNote}
           <button class="add-cart" id="addCartBtn" style="display:block;">Add Recommended Products to Cart</button>
         ` : ''}
-        ${!result.cart.length ? systemNote : ''}
+        ${!displayResult.cart.length ? systemNote : ''}
         <div class="warnings">${warnings}</div>
-        ${result.cart.length ? '<div class="print-actions"><button class="print-button" type="button" id="printResultsBtn">Print Recommendation</button></div>' : ''}
+        ${displayResult.cart.length ? '<div class="print-actions"><button class="print-button" type="button" id="printResultsBtn">Print Recommendation</button></div>' : ''}
       `;
+
+      document.querySelectorAll('.layout-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          activeLayoutTab = this.getAttribute('data-layout-option') || 'recommended';
+          renderResults(lastRecommendation || result);
+        });
+      });
 
       const contactAssistanceBtn = document.getElementById('contactAssistanceBtn');
       if (contactAssistanceBtn) {
@@ -1667,7 +1844,7 @@
 
       const addCartBtn = document.getElementById('addCartBtn');
       if (addCartBtn) {
-        addCartBtn.addEventListener('click', () => addRecommendedCartToShopify(result.cart));
+        addCartBtn.addEventListener('click', () => addRecommendedCartToShopify(displayResult.cart));
       }
     }
 
@@ -1805,6 +1982,8 @@
         return ['No recommendation generated yet.'];
       }
 
+      result = getActiveLayoutResult(result);
+
       const lines = [
         `Status: ${result.status}`,
         `Target: ${result.targetSqFt ? formatNumber(result.targetSqFt) : '-'} sq ft`,
@@ -1829,6 +2008,7 @@
     function resetForm() {
       document.getElementById('calcForm').reset();
       lastRecommendation = null;
+      activeLayoutTab = 'recommended';
       updateFieldVisibility();
       resultsEl.innerHTML = '<div class="results-empty">Enter project details and generate a recommendation.</div>';
     }
