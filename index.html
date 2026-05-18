@@ -1001,9 +1001,26 @@
         }
       });
 
-      const alternate = orientationResults.find(option => option.layoutOrientation !== recommended.layoutOrientation) || null;
+      let alternate = orientationResults.find(option => option.layoutOrientation !== recommended.layoutOrientation) || null;
+      const alternateOrientation = orientations.find(option => option.name !== recommended.layoutOrientation) || null;
+      if (alternateOrientation) {
+        const physicalAlternate = buildPhysicalAlternateRecommendation(inputs, alternateOrientation, targetSqFt);
+        if (physicalAlternate && (!alternate || !alternate.cart || !alternate.cart.length || physicalAlternate.recommendedCoverage > alternate.recommendedCoverage)) {
+          alternate = physicalAlternate;
+        }
+      }
+
+      // Re-rank after the Option 2 physical fallback is built.
+      // Previously, the recommended option was selected before the cleaner physical
+      // fallback was added, so a closer alternate could remain stuck as Option 2.
+      if (alternate && alternate.cart && alternate.cart.length && isBetterOrientationRecommendation(alternate, recommended, targetSqFt)) {
+        const previousRecommended = recommended;
+        recommended = alternate;
+        alternate = previousRecommended;
+      }
+
       recommended.optionKey = 'recommended';
-      recommended.tabLabel = 'Option 1 Layout';
+      recommended.tabLabel = 'Option 1';
       recommended.layoutPreviewTitle = 'Option 1 layout concept';
 
       const layoutOptions = [recommended];
@@ -1018,6 +1035,118 @@
         ...recommended,
         layoutOptions
       };
+    }
+
+    function buildPhysicalAlternateRecommendation(inputs, orientation, targetSqFt) {
+      const eligible = products.filter(p =>
+        p.voltage === inputs.voltage &&
+        p.lengthFt <= orientation.maxRun &&
+        p.widthIn <= orientation.laneCapacityIn
+      );
+
+      const best = findBestCleanPhysicalAlternateCart(eligible, targetSqFt, settings, orientation.laneCapacityIn, orientation.maxRun);
+      if (!best) return null;
+
+      best.layoutOrientation = orientation.name;
+      best.maxRun = orientation.maxRun;
+      best.laneCapacityIn = orientation.laneCapacityIn;
+      best.layoutDescription = buildSimpleLayoutDescription(inputs, best, orientation);
+
+      const optionWarnings = [best.layoutDescription];
+      optionWarnings.push('Closest practical mat fit shown. When full coverage is not possible with a clean layout, the tool favors a simpler mat plan over adding several short or mixed-width mats for only a small coverage gain. Confirm final placement before ordering.');
+
+      return buildRecommendationFromCandidate(inputs, best, targetSqFt, optionWarnings);
+    }
+
+    function findBestCleanPhysicalAlternateCart(eligible, targetSqFt, settings, maxLaneWidthIn, maxRunFt) {
+      let best = null;
+      const counts = Array(eligible.length).fill(0);
+
+      function recurse(index) {
+        if (index === eligible.length) {
+          evaluate();
+          return;
+        }
+
+        for (let q = 0; q <= settings.maxMatsToTest; q++) {
+          counts[index] = q;
+          if (counts.reduce((a, b) => a + b, 0) <= settings.maxMatsToTest) recurse(index + 1);
+        }
+        counts[index] = 0;
+      }
+
+      function evaluate() {
+        let coverage = 0;
+        let matCount = 0;
+        const cart = [];
+
+        counts.forEach((qty, i) => {
+          if (qty > 0) {
+            const p = eligible[i];
+            matCount += qty;
+            coverage += qty * p.coverageSqFt;
+            cart.push({ ...p, qty, lineCoverageSqFt: qty * p.coverageSqFt });
+          }
+        });
+
+        if (matCount === 0) return;
+        if (coverage >= targetSqFt) return;
+
+        const laneWidthIn = calculatePackedLaneWidth(cart, maxRunFt);
+        if (laneWidthIn > maxLaneWidthIn) return;
+
+        const widthTypeCount = new Set(cart.map(item => item.widthIn)).size;
+        const distinctSkuCount = cart.length;
+        const laneQuality = getLaneQuality(cart, maxRunFt);
+
+        // This fallback is only for Option 2. It should show a clean physical alternate,
+        // including a mostly 3 ft layout plus a single 1.5 ft fill lane when that improves coverage.
+        // It should not revive puzzle-piece layouts with several SKUs or uneven lane patterns.
+        if (distinctSkuCount > 2) return;
+        if (widthTypeCount > 2) return;
+        if ((laneQuality.lanePatternTypeCount || 0) > 2) return;
+        if ((laneQuality.laneFillRangeFt || 0) > 2) return;
+
+        const candidate = {
+          coverage,
+          matCount,
+          avgCoverage: coverage / matCount,
+          laneWidthIn,
+          widthTypeCount,
+          distinctSkuCount,
+          laneCount: laneQuality.laneCount || matCount,
+          laneFillRangeFt: laneQuality.laneFillRangeFt || 0,
+          lanePatternTypeCount: laneQuality.lanePatternTypeCount || 0,
+          cart,
+          isPartial: true
+        };
+
+        if (!best || isBetterCleanPhysicalAlternate(candidate, best)) {
+          best = candidate;
+        }
+      }
+
+      recurse(0);
+      return best;
+    }
+
+    function isBetterCleanPhysicalAlternate(candidate, currentBest) {
+      if (candidate.coverage > currentBest.coverage) return true;
+      if (candidate.coverage < currentBest.coverage) return false;
+
+      if ((candidate.lanePatternTypeCount || 0) < (currentBest.lanePatternTypeCount || 0)) return true;
+      if ((candidate.lanePatternTypeCount || 0) > (currentBest.lanePatternTypeCount || 0)) return false;
+
+      if ((candidate.laneFillRangeFt || 0) < (currentBest.laneFillRangeFt || 0)) return true;
+      if ((candidate.laneFillRangeFt || 0) > (currentBest.laneFillRangeFt || 0)) return false;
+
+      if ((candidate.distinctSkuCount || 0) < (currentBest.distinctSkuCount || 0)) return true;
+      if ((candidate.distinctSkuCount || 0) > (currentBest.distinctSkuCount || 0)) return false;
+
+      if ((candidate.widthTypeCount || 0) < (currentBest.widthTypeCount || 0)) return true;
+      if ((candidate.widthTypeCount || 0) > (currentBest.widthTypeCount || 0)) return false;
+
+      return candidate.matCount < currentBest.matCount;
     }
 
     function buildOrientationRecommendation(inputs, orientation, targetSqFt) {
@@ -1128,6 +1257,15 @@
     function isBetterOrientationRecommendation(candidate, currentBest, targetSqFt) {
       if (candidate.cart.length && !currentBest.cart.length) return true;
       if (!candidate.cart.length && currentBest.cart.length) return false;
+
+      const candidateFitPct = targetSqFt ? Math.abs(candidate.recommendedCoverage - targetSqFt) / targetSqFt : Infinity;
+      const currentFitPct = targetSqFt ? Math.abs(currentBest.recommendedCoverage - targetSqFt) / targetSqFt : Infinity;
+      const meaningfulFitDifference = 0.005; // 0.5 percentage points
+
+      // When both orientations produce clean physical layouts, choose the one that is
+      // closest to the requested heated area. Cleanliness remains the tiebreaker.
+      if (candidateFitPct + meaningfulFitDifference < currentFitPct) return true;
+      if (currentFitPct + meaningfulFitDifference < candidateFitPct) return false;
 
       const candidatePartial = !!(candidate._candidate && candidate._candidate.isPartial);
       const currentPartial = !!(currentBest._candidate && currentBest._candidate.isPartial);
@@ -1711,7 +1849,7 @@
       return `
         <div class="system-note">
           <strong style="color:#d84a2b; font-size:18px;">Complete system reminder</strong>
-          <strong>This recommendation is for WarmStep heating mats only and is intended as a planning estimate, not a guarantee of fit or a final installation plan. Please confirm all mat sizes, quantities, placement, thermostat requirements, and accessories before completing your purchase.</strong> A complete floor heating system requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
+          <strong>This recommendation is for WarmStep heating mats only.</strong> A complete floor heating system also requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
         </div>
       `;
     }
@@ -1728,7 +1866,7 @@
       const layoutWarning = showPerpendicularWarning ? `
         <div class="naildown-tab-warning">
           <strong>${escapeHtml(installType)} layout note</strong>
-          Mats must run perpendicular to the flooring boards. Confirm direction and select the option that meets this requirement before adding to cart.
+          Mats must run perpendicular to the flooring boards. Confirm the direction before ordering.
         </div>
       ` : '';
 
