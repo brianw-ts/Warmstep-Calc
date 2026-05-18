@@ -162,6 +162,12 @@
       box-shadow: 0 0 0 3px rgba(216, 74, 43, .12);
     }
 
+    #voltage {
+      font-size: 14px;
+      padding-left: 11px;
+      padding-right: 10px;
+    }
+
     .actions {
       display: flex;
       gap: 12px;
@@ -559,6 +565,55 @@
 
     .print-button:hover { background: #e2e8f0; }
 
+
+
+    .product-route-box {
+      border: 1px solid var(--warning-border);
+      background: var(--warning);
+      border-radius: 16px;
+      padding: 18px;
+      color: #7c2d12;
+      line-height: 1.45;
+    }
+
+    .product-route-box h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: #7c2d12;
+    }
+
+    .product-route-box p {
+      margin: 0 0 14px;
+      font-size: 14px;
+    }
+
+    .route-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .route-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-weight: 800;
+      font-size: 14px;
+      text-decoration: none;
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(216, 74, 43, .22);
+    }
+
+    .route-button-secondary {
+      background: #f1f5f9;
+      color: #334155;
+      box-shadow: none;
+    }
+
     @media print {
       body { background: #fff; }
       .hero, form.panel, .add-cart, .print-actions, .modal-backdrop { display: none !important; }
@@ -679,8 +734,8 @@
             <div class="field">
               <label for="voltage">Voltage</label>
               <select id="voltage" required>
-                <option value="120">120V</option>
-                <option value="240" selected>240V</option>
+                <option value="120">120V (for up to 200 Sq. Ft.)</option>
+                <option value="240" selected>240V (for up to 400 Sq. Ft.)</option>
               </select>
             </div>
             <div class="field">
@@ -790,7 +845,7 @@
       Shopify variant IDs have been added for the WarmStep product list.
       Confirm IDs before production deployment.
     */
-    const products = [
+    const warmStepProducts = [
       // 120V - 18 inch mats
       { sku: 'WS1512-120B', variantId: '44835729014837', voltage: 120, widthIn: 18, lengthFt: 12, watts: 147, coverageSqFt: 18 },
       { sku: 'WS1510-120B', variantId: '44835728326709', voltage: 120, widthIn: 18, lengthFt: 10, watts: 122, coverageSqFt: 15 },
@@ -833,6 +888,131 @@
       { sku: 'WS3004-240B', variantId: '44835738681397', voltage: 240, widthIn: 36, lengthFt: 4, watts: 103, coverageSqFt: 12 }
     ];
 
+
+
+    const thermoFloorProducts = [
+      // 120V - 18 inch mats
+      { sku: 'TF1512-120', variantId: '44835742613557', voltage: 120, widthIn: 18, lengthFt: 12, watts: 180, amps: 1.5, coverageSqFt: 18 },
+      { sku: 'TF1510-120', variantId: '44835742384181', voltage: 120, widthIn: 18, lengthFt: 10, watts: 150, amps: 1.25, coverageSqFt: 15 },
+      { sku: 'TF1508-120', variantId: '44835742318645', voltage: 120, widthIn: 18, lengthFt: 8, watts: 120, amps: 1.0, coverageSqFt: 12 },
+      { sku: 'TF1506-120', variantId: '44835742253109', voltage: 120, widthIn: 18, lengthFt: 6, watts: 90, amps: 0.75, coverageSqFt: 9 },
+      { sku: 'TF1505-120', variantId: '44835741925429', voltage: 120, widthIn: 18, lengthFt: 5, watts: 75.6, amps: 0.63, coverageSqFt: 7.5 },
+      { sku: 'TF1504-120', variantId: '44835741892661', voltage: 120, widthIn: 18, lengthFt: 4, watts: 60, amps: 0.5, coverageSqFt: 6 },
+
+      // 120V - 36 inch mats
+      { sku: 'TF3012-120', variantId: '44835743989813', voltage: 120, widthIn: 36, lengthFt: 12, watts: 360, amps: 3.0, coverageSqFt: 36 },
+      { sku: 'TF3010-120', variantId: '44835743924277', voltage: 120, widthIn: 36, lengthFt: 10, watts: 300, amps: 2.5, coverageSqFt: 30 },
+      { sku: 'TF3008-120', variantId: '44835743858741', voltage: 120, widthIn: 36, lengthFt: 8, watts: 240, amps: 2.0, coverageSqFt: 24 },
+      { sku: 'TF3006-120', variantId: '44835743039541', voltage: 120, widthIn: 36, lengthFt: 6, watts: 180, amps: 1.5, coverageSqFt: 18 },
+      { sku: 'TF3005-120', variantId: '44835742974005', voltage: 120, widthIn: 36, lengthFt: 5, watts: 150, amps: 1.25, coverageSqFt: 15 },
+      { sku: 'TF3004-120', variantId: '44835742908469', voltage: 120, widthIn: 36, lengthFt: 4, watts: 120, amps: 1.0, coverageSqFt: 12 },
+      { sku: 'TF3003-120', variantId: '44835742875701', voltage: 120, widthIn: 36, lengthFt: 3, watts: 90, amps: 0.75, coverageSqFt: 9 },
+      { sku: 'TF3002-120', variantId: '44835742842933', voltage: 120, widthIn: 36, lengthFt: 2, watts: 60, amps: 0.5, coverageSqFt: 6 },
+
+      // 240V - 18 inch mats
+      { sku: 'TF1524-240', variantId: '44835742810165', voltage: 240, widthIn: 18, lengthFt: 24, watts: 360, amps: 1.5, coverageSqFt: 36 },
+      { sku: 'TF1520-240', variantId: '44835742777397', voltage: 240, widthIn: 18, lengthFt: 20, watts: 300, amps: 1.25, coverageSqFt: 30 },
+      { sku: 'TF1518-240', variantId: '44835742744629', voltage: 240, widthIn: 18, lengthFt: 18, watts: 271.2, amps: 1.13, coverageSqFt: 27 },
+      { sku: 'TF1516-240', variantId: '44835742711861', voltage: 240, widthIn: 18, lengthFt: 16, watts: 240, amps: 1.0, coverageSqFt: 24 },
+      { sku: 'TF1514-240', variantId: '44835742679093', voltage: 240, widthIn: 18, lengthFt: 14, watts: 211.2, amps: 0.88, coverageSqFt: 21 },
+      { sku: 'TF1512-240', variantId: '44835742646325', voltage: 240, widthIn: 18, lengthFt: 12, watts: 180, amps: 0.75, coverageSqFt: 18 },
+      { sku: 'TF1510-240', variantId: '44835742416949', voltage: 240, widthIn: 18, lengthFt: 10, watts: 151.2, amps: 0.63, coverageSqFt: 15 },
+      { sku: 'TF1508-240', variantId: '44835742351413', voltage: 240, widthIn: 18, lengthFt: 8, watts: 120, amps: 0.5, coverageSqFt: 12 },
+
+      // 240V - 36 inch mats
+      { sku: 'TF3024-240', variantId: '44835744251957', voltage: 240, widthIn: 36, lengthFt: 24, watts: 720, amps: 3.0, coverageSqFt: 72 },
+      { sku: 'TF3020-240', variantId: '44835744219189', voltage: 240, widthIn: 36, lengthFt: 20, watts: 600, amps: 2.5, coverageSqFt: 60 },
+      { sku: 'TF3018-240', variantId: '44835744186421', voltage: 240, widthIn: 36, lengthFt: 18, watts: 540, amps: 2.25, coverageSqFt: 54 },
+      { sku: 'TF3016-240', variantId: '44835744153653', voltage: 240, widthIn: 36, lengthFt: 16, watts: 480, amps: 2.0, coverageSqFt: 48 },
+      { sku: 'TF3014-240', variantId: '44835744120885', voltage: 240, widthIn: 36, lengthFt: 14, watts: 420, amps: 1.75, coverageSqFt: 42 },
+      { sku: 'TF3012-240', variantId: '44835744088117', voltage: 240, widthIn: 36, lengthFt: 12, watts: 360, amps: 1.5, coverageSqFt: 36 },
+      { sku: 'TF3010-240', variantId: '44835743957045', voltage: 240, widthIn: 36, lengthFt: 10, watts: 300, amps: 1.25, coverageSqFt: 30 },
+      { sku: 'TF3008-240', variantId: '44835743891509', voltage: 240, widthIn: 36, lengthFt: 8, watts: 240, amps: 1.0, coverageSqFt: 24 },
+      { sku: 'TF3006-240', variantId: '44835743105077', voltage: 240, widthIn: 36, lengthFt: 6, watts: 180, amps: 0.75, coverageSqFt: 18 },
+      { sku: 'TF3005-240', variantId: '44835743006773', voltage: 240, widthIn: 36, lengthFt: 5, watts: 151.2, amps: 0.63, coverageSqFt: 15 },
+      { sku: 'TF3004-240', variantId: '44835742941237', voltage: 240, widthIn: 36, lengthFt: 4, watts: 120, amps: 0.5, coverageSqFt: 12 }
+    ];
+
+    const productLines = {
+      warmstep: {
+        key: 'warmstep',
+        name: 'WarmStep',
+        eyebrow: 'WarmStep Mat Calculator',
+        title: 'WarmStep Mat Recommendation Calculator',
+        headline: 'Find the right size and amount of WarmStep heating mats for your project.',
+        lede: 'Enter your room details and voltage to get a recommended WarmStep mat cart with quantities, estimated coverage, fit notes, and layout warnings. This recommendation is for heating mats only; full systems require a thermostat and may require additional accessories.',
+        resultHeading: 'WarmStep Heat Mat Recommendation',
+        products: warmStepProducts,
+        allowedInstallTypes: ['Glued', 'Floating', 'Nail Down', 'Nail Assist', 'Glue Assist'],
+        supportsPerpendicularInstallNote: true,
+        warmStepCalculatorUrl: '/pages/warmstep-calculator',
+        contactUrl: '/pages/contact'
+      },
+      thermofloor: {
+        key: 'thermofloor',
+        name: 'ThermoFloor',
+        eyebrow: 'ThermoFloor Mat Calculator',
+        title: 'ThermoFloor Mat Recommendation Calculator',
+        headline: 'Find the right size and amount of ThermoFloor heating mats for your project.',
+        lede: 'Enter your room details and voltage to get a recommended ThermoFloor mat cart with quantities, estimated coverage, fit notes, and layout warnings. This recommendation is for heating mats only; full systems require a thermostat and may require additional accessories.',
+        resultHeading: 'ThermoFloor Heat Mat Recommendation',
+        products: thermoFloorProducts,
+        allowedInstallTypes: ['Glued', 'Floating'],
+        supportsPerpendicularInstallNote: false,
+        warmStepCalculatorUrl: '/pages/warmstep-calculator',
+        contactUrl: '/pages/contact',
+        unsupportedInstallHeadline: 'WarmStep is recommended for this installation type.',
+        unsupportedInstallBody: 'ThermoFloor heating mats are designed for floating and glued flooring installations. For nail down, nail assist, or glue assist projects, WarmStep is the recommended solution because it is designed for those installation methods.'
+      }
+    };
+
+    const requestedProductLine = String(
+      window.MAT_CALCULATOR_PRODUCT_LINE ||
+      new URLSearchParams(window.location.search).get('line') ||
+      document.body.dataset.productLine ||
+      'thermofloor'
+    ).toLowerCase();
+    const activeProductLine = productLines[requestedProductLine] || productLines.warmstep;
+
+    function isLocalOrTestEnvironment() {
+      const host = window.location.hostname || '';
+      return window.location.protocol === 'file:' || host === '' || host === 'localhost' || host === '127.0.0.1' || window.location.search.includes('line=');
+    }
+
+    function appendCalculatorStateToUrl(baseUrl, lineKey) {
+      const [urlWithoutHash, hash = ''] = String(baseUrl || '').split('#');
+      const separator = urlWithoutHash.includes('?') ? '&' : '?';
+      const params = new URLSearchParams();
+
+      params.set('line', lineKey);
+
+      const roomShape = document.getElementById('roomShape')?.value;
+      const voltage = document.getElementById('voltage')?.value;
+      const installType = document.getElementById('installType')?.value;
+      const heatedLength = document.getElementById('heatedLength')?.value;
+      const heatedWidth = document.getElementById('heatedWidth')?.value;
+
+      if (roomShape) params.set('roomShape', roomShape);
+      if (voltage) params.set('voltage', voltage);
+      if (installType) params.set('installType', installType);
+      if (heatedLength) params.set('heatedLength', heatedLength);
+      if (heatedWidth) params.set('heatedWidth', heatedWidth);
+
+      return `${urlWithoutHash}${separator}${params.toString()}${hash ? `#${hash}` : ''}`;
+    }
+
+    function getCalculatorLineUrl(lineKey) {
+      if (isLocalOrTestEnvironment()) {
+        const baseUrl = window.location.href.split('?')[0].split('#')[0];
+        return appendCalculatorStateToUrl(baseUrl, lineKey);
+      }
+
+      if (lineKey === 'warmstep') return appendCalculatorStateToUrl(activeProductLine.warmStepCalculatorUrl || '/pages/warmstep-calculator', lineKey);
+      if (lineKey === 'thermofloor') return appendCalculatorStateToUrl(activeProductLine.thermoFloorCalculatorUrl || '/pages/thermofloor-calculator', lineKey);
+      return '#';
+    }
+
+    const products = activeProductLine.products;
     const settings = {
       maxCoverageByVoltage: { 120: 200, 240: 400 },
       underageTolerance: 0,
@@ -854,9 +1034,86 @@
     let activeLayoutTab = 'recommended';
 
     function requiresPerpendicularLayoutNote(installType) {
-      return ['Nail Down', 'Nail Assist', 'Glue Assist'].includes(installType);
+      return !!activeProductLine.supportsPerpendicularInstallNote && ['Nail Down', 'Nail Assist', 'Glue Assist'].includes(installType);
     }
 
+    function isInstallTypeSupported(installType) {
+      return activeProductLine.allowedInstallTypes.includes(installType);
+    }
+
+    function buildUnsupportedInstallTypeResult(inputs) {
+      return {
+        status: activeProductLine.unsupportedInstallHeadline || 'This installation type is not supported for this product line.',
+        targetSqFt: inputs.heatedLengthFt && inputs.heatedWidthFt ? inputs.heatedLengthFt * inputs.heatedWidthFt : 0,
+        recommendedCoverage: 0,
+        totalWatts: 0,
+        totalAmps: 0,
+        fitSqFt: 0,
+        fitPercent: 0,
+        voltage: inputs.voltage,
+        matCount: 0,
+        layoutOrientation: '',
+        laneWidthIn: 0,
+        maxRunFt: 0,
+        laneCapacityIn: 0,
+        isSimpleRoom: true,
+        roomLengthFt: inputs.heatedLengthFt,
+        roomWidthFt: inputs.heatedWidthFt,
+        cart: [],
+        requiresLayoutReview: false,
+        showContactAssistance: false,
+        unsupportedInstallType: true,
+        installType: inputs.installType,
+        warnings: [],
+        _candidate: null
+      };
+    }
+
+    function applyProductLineContent() {
+      document.title = activeProductLine.title;
+      const eyebrow = document.querySelector('.eyebrow');
+      const headline = document.querySelector('.hero h1');
+      const lede = document.querySelector('.lede');
+      const resultHeading = document.querySelector('#resultsPanel .panel-header h2');
+      const complexCopy = document.querySelector('#complexFields .review-required-box p');
+
+      if (eyebrow) eyebrow.textContent = activeProductLine.eyebrow;
+      if (headline) headline.textContent = activeProductLine.headline;
+      if (lede) lede.textContent = activeProductLine.lede;
+      if (resultHeading) resultHeading.textContent = activeProductLine.resultHeading;
+      if (complexCopy) complexCopy.textContent = `Irregular, angled, or obstructed rooms require manual layout review before a ${activeProductLine.name} mat recommendation can be made.`;
+    }
+
+
+    function setSelectFromQuery(id, value) {
+      const el = document.getElementById(id);
+      if (!el || value === null || value === undefined || value === '') return;
+      const matchingOption = Array.from(el.options).find(option => option.value === value);
+      if (matchingOption) el.value = value;
+    }
+
+    function setInputFromQuery(id, value) {
+      const el = document.getElementById(id);
+      if (!el || value === null || value === undefined || value === '') return;
+      el.value = value;
+    }
+
+    function applyStateFromQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+
+      setSelectFromQuery('roomShape', params.get('roomShape'));
+      setSelectFromQuery('voltage', params.get('voltage'));
+      setSelectFromQuery('installType', params.get('installType'));
+      setInputFromQuery('heatedLength', params.get('heatedLength') || params.get('length'));
+      setInputFromQuery('heatedWidth', params.get('heatedWidth') || params.get('width'));
+    }
+
+    function shouldAutoGenerateFromQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('heatedLength') && params.has('heatedWidth') && roomShapeEl.value === 'Open Floor Plan/Rectangular with No Obstacles';
+    }
+
+    applyProductLineContent();
 
     roomShapeEl.addEventListener('change', updateFieldVisibility);
     document.getElementById('resetBtn').addEventListener('click', resetForm);
@@ -880,6 +1137,12 @@
         return;
       }
       activeLayoutTab = 'recommended';
+      if (!isInstallTypeSupported(inputs.installType)) {
+        const recommendation = buildUnsupportedInstallTypeResult(inputs);
+        lastRecommendation = recommendation;
+        renderResults(recommendation);
+        return;
+      }
       const recommendation = generateWarmStepRecommendation(inputs, products, settings);
       lastRecommendation = recommendation;
       renderResults(recommendation);
@@ -942,8 +1205,8 @@
 
       if (inputs.roomShape === 'Irregular/Angled/Obstructed') {
         return errorResult('Layout review required', [
-          'This room type requires manual layout review before a WarmStep mat recommendation can be made. Please use the Send Us Your Layout button and include a floor plan, sketch, photo, or marked-up layout so we can work with you on the right mat plan.',
-          'WarmStep mats cannot be shortened and should not run under permanent fixtures, so obstructed or irregular spaces should be reviewed before ordering.'
+          `This room type requires manual layout review before a ${activeProductLine.name} mat recommendation can be made. Please use the Send Us Your Layout button and include a floor plan, sketch, photo, or marked-up layout so we can work with you on the right mat plan.`,
+          `${activeProductLine.name} mats cannot be shortened and should not run under permanent fixtures, so obstructed or irregular spaces should be reviewed before ordering.`
         ], targetSqFt || 0, true);
       }
 
@@ -984,23 +1247,22 @@
       const orientationResults = orientations.map(orientation => {
         const standardOption = buildOrientationRecommendation(inputs, orientation, targetSqFt);
         const physicalOption = buildPhysicalAlternateRecommendation(inputs, orientation, targetSqFt);
+        const repeatedLaneOption = buildRepeatedLaneRecommendation(inputs, orientation, targetSqFt);
 
-        // Every rectangular room should try to show both directions. Use the normal
-        // recommendation when it produces a cart. If it fails or the physical fallback
-        // covers more area, show the fallback rather than hiding the direction.
-        if (physicalOption && (!standardOption || !standardOption.cart || !standardOption.cart.length || physicalOption.recommendedCoverage > standardOption.recommendedCoverage)) {
-          return physicalOption;
-        }
-
-        return standardOption;
+        // Every rectangular room should try to show both directions. Use the strongest
+        // clean option available. The repeated-lane fallback is intentionally narrow:
+        // it only considers the same lane pattern repeated across the room, so it
+        // can use fewer longer mats such as 3 x 10 plus 3 x 5 instead of splitting
+        // everything into short mats.
+        return chooseBestAvailableOrientationOption([standardOption, physicalOption, repeatedLaneOption], targetSqFt);
       }).filter(Boolean);
 
       const viableOrientationResults = orientationResults.filter(option => option.cart && option.cart.length && !option.requiresLayoutReview);
 
       if (!viableOrientationResults.length) {
         return errorResult('Layout review required', [
-          'The entered dimensions do not produce a clean WarmStep mat layout using standard mat sizes. Please contact ThermoSoft for assistance or send us your layout so we can recommend the right mat plan.',
-          'WarmStep mats cannot be shortened and should not run under permanent fixtures, so final placement should be confirmed before ordering.'
+          `The entered dimensions do not produce a clean ${activeProductLine.name} mat layout using standard mat sizes. Please contact ThermoSoft for assistance or send us your layout so we can recommend the right mat plan.`,
+          `${activeProductLine.name} mats cannot be shortened and should not run under permanent fixtures, so final placement should be confirmed before ordering.`
         ], targetSqFt, true, true);
       }
 
@@ -1021,14 +1283,14 @@
       }
 
       recommended.optionKey = 'recommended';
-      recommended.tabLabel = 'Option 1';
-      recommended.layoutPreviewTitle = 'Option 1 layout concept';
+      recommended.tabLabel = 'Option #1 Layout';
+      recommended.layoutPreviewTitle = 'Option #1 layout concept';
 
       const layoutOptions = [recommended];
       if (alternate) {
         alternate.optionKey = 'alternate';
-        alternate.tabLabel = 'Option 2 Layout';
-        alternate.layoutPreviewTitle = alternate.cart && alternate.cart.length ? 'Option 2 layout concept' : 'Alternate layout unavailable';
+        alternate.tabLabel = 'Option #2 Layout';
+        alternate.layoutPreviewTitle = alternate.cart && alternate.cart.length ? 'Option #2 layout concept' : 'Alternate layout unavailable';
         layoutOptions.push(alternate);
       }
 
@@ -1057,6 +1319,272 @@
       optionWarnings.push('Closest practical mat fit shown. When full coverage is not possible with a clean layout, the tool favors a simpler mat plan over adding several short or mixed-width mats for only a small coverage gain. Confirm final placement before ordering.');
 
       return buildRecommendationFromCandidate(inputs, best, targetSqFt, optionWarnings);
+    }
+
+
+    function buildRepeatedLaneRecommendation(inputs, orientation, targetSqFt) {
+      const eligible = products.filter(p =>
+        p.voltage === inputs.voltage &&
+        p.lengthFt <= orientation.maxRun &&
+        p.widthIn <= orientation.laneCapacityIn
+      );
+
+      const best = findBestRepeatedLaneCart(eligible, targetSqFt, settings, orientation.laneCapacityIn, orientation.maxRun);
+      if (!best) return null;
+
+      best.layoutOrientation = orientation.name;
+      best.maxRun = orientation.maxRun;
+      best.laneCapacityIn = orientation.laneCapacityIn;
+      best.layoutDescription = buildSimpleLayoutDescription(inputs, best, orientation);
+
+      const optionWarnings = [best.layoutDescription];
+      if (best.isPartial) {
+        optionWarnings.push('Closest practical mat fit shown. When full coverage is not possible with a clean layout, the tool favors a simpler mat plan over adding several short or mixed-width mats for only a small coverage gain. Confirm final placement before ordering.');
+      }
+
+      return buildRecommendationFromCandidate(inputs, best, targetSqFt, optionWarnings);
+    }
+
+    function chooseBestAvailableOrientationOption(options, targetSqFt) {
+      const available = options.filter(option => option && option.cart && option.cart.length);
+      if (!available.length) return options.find(Boolean) || null;
+
+      let best = available[0];
+      available.slice(1).forEach(candidate => {
+        if (isBetterSameDirectionOption(candidate, best, targetSqFt)) {
+          best = candidate;
+        }
+      });
+
+      return best;
+    }
+
+    function isBetterSameDirectionOption(candidate, currentBest, targetSqFt) {
+      const candidateFitPct = targetSqFt ? Math.abs(candidate.recommendedCoverage - targetSqFt) / targetSqFt : Infinity;
+      const currentFitPct = targetSqFt ? Math.abs(currentBest.recommendedCoverage - targetSqFt) / targetSqFt : Infinity;
+      const meaningfulFitDifference = 0.005; // 0.5 percentage points
+
+      if (candidateFitPct + meaningfulFitDifference < currentFitPct) return true;
+      if (currentFitPct + meaningfulFitDifference < candidateFitPct) return false;
+
+      // Within the same direction, do not let a single-width 1.5 ft layout beat a
+      // cleaner mixed-width fill that achieves the same coverage with far fewer mats.
+      if ((candidate.matCount || 0) < (currentBest.matCount || 0)) return true;
+      if ((candidate.matCount || 0) > (currentBest.matCount || 0)) return false;
+
+      if ((candidate._candidate?.distinctSkuCount || candidate.cart.length || 0) < (currentBest._candidate?.distinctSkuCount || currentBest.cart.length || 0)) return true;
+      if ((candidate._candidate?.distinctSkuCount || candidate.cart.length || 0) > (currentBest._candidate?.distinctSkuCount || currentBest.cart.length || 0)) return false;
+
+      if ((candidate._candidate?.lanePatternTypeCount || 0) < (currentBest._candidate?.lanePatternTypeCount || 0)) return true;
+      if ((candidate._candidate?.lanePatternTypeCount || 0) > (currentBest._candidate?.lanePatternTypeCount || 0)) return false;
+
+      if ((candidate._candidate?.widthTypeCount || 0) < (currentBest._candidate?.widthTypeCount || 0)) return true;
+      if ((candidate._candidate?.widthTypeCount || 0) > (currentBest._candidate?.widthTypeCount || 0)) return false;
+
+      return (candidate.recommendedCoverage || 0) > (currentBest.recommendedCoverage || 0);
+    }
+
+    function findBestRepeatedLaneCart(eligible, targetSqFt, settings, maxLaneWidthIn, maxRunFt) {
+      let best = null;
+      const maxAllowedCoverage = targetSqFt * (1 + (settings.overageTolerance || 0));
+      const productsByWidth = new Map();
+
+      eligible.forEach(product => {
+        if (!productsByWidth.has(product.widthIn)) productsByWidth.set(product.widthIn, []);
+        productsByWidth.get(product.widthIn).push(product);
+      });
+
+      const patternsByWidth = new Map();
+
+      function considerCandidate(candidate) {
+        if (!candidate) return;
+        if (candidate.coverage <= 0 || candidate.coverage > maxAllowedCoverage) return;
+        if (candidate.laneWidthIn > maxLaneWidthIn + 0.0001) return;
+
+        if (!best || isBetterRepeatedLaneCart(candidate, best, targetSqFt)) {
+          best = candidate;
+        }
+      }
+
+      function mergePatternCart(patternsWithCounts) {
+        const grouped = new Map();
+        patternsWithCounts.forEach(({ pattern, laneCount }) => {
+          pattern.items.forEach(item => {
+            const sku = item.product.sku;
+            const qtyToAdd = item.qty * laneCount;
+            const existing = grouped.get(sku);
+            if (existing) {
+              existing.qty += qtyToAdd;
+              existing.lineCoverageSqFt += item.product.coverageSqFt * qtyToAdd;
+            } else {
+              grouped.set(sku, {
+                ...item.product,
+                qty: qtyToAdd,
+                lineCoverageSqFt: item.product.coverageSqFt * qtyToAdd
+              });
+            }
+          });
+        });
+
+        return Array.from(grouped.values()).sort((a, b) => {
+          if (b.widthIn !== a.widthIn) return b.widthIn - a.widthIn;
+          return b.lengthFt - a.lengthFt;
+        });
+      }
+
+      // Same-width repeated lanes. This preserves the original clean-grid behavior.
+      productsByWidth.forEach((widthProducts, widthIn) => {
+        const maxLaneCount = Math.floor((maxLaneWidthIn + 0.0001) / Number(widthIn));
+        if (maxLaneCount <= 0) return;
+
+        const sorted = widthProducts.slice().sort((a, b) => b.lengthFt - a.lengthFt);
+        const lanePatterns = buildCleanLanePatterns(sorted, maxRunFt);
+        patternsByWidth.set(Number(widthIn), lanePatterns);
+
+        lanePatterns.forEach(pattern => {
+          for (let laneCount = 1; laneCount <= maxLaneCount; laneCount++) {
+            const coverage = pattern.coverageSqFt * laneCount;
+            const laneWidthIn = laneCount * Number(widthIn);
+            const cart = mergePatternCart([{ pattern, laneCount }]);
+            const matCount = pattern.matCount * laneCount;
+
+            considerCandidate({
+              coverage,
+              matCount,
+              avgCoverage: coverage / matCount,
+              laneWidthIn,
+              widthTypeCount: 1,
+              distinctSkuCount: cart.length,
+              laneCount,
+              laneFillRangeFt: 0,
+              lanePatternTypeCount: 1,
+              cart,
+              isPartial: coverage < targetSqFt
+            });
+          }
+        });
+      });
+
+      // Mixed-width repeated lanes. This is intentionally narrow:
+      // use 3 ft lanes as the primary pattern and allow only one 1.5 ft fill lane
+      // with the same run length. This catches clean layouts like 3 × 3 ft by 10 ft
+      // plus 1 × 1.5 ft by 10 ft, without letting the tool build mostly 1.5 ft lanes.
+      const widePatterns = patternsByWidth.get(36) || [];
+      const fillPatterns = patternsByWidth.get(18) || [];
+      if (widePatterns.length && fillPatterns.length) {
+        widePatterns.forEach(widePattern => {
+          fillPatterns.forEach(fillPattern => {
+            if (Math.abs(widePattern.laneLengthFt - fillPattern.laneLengthFt) > 0.0001) return;
+
+            const maxWideLaneCount = Math.floor((maxLaneWidthIn - 18 + 0.0001) / 36);
+            for (let wideLaneCount = 1; wideLaneCount <= maxWideLaneCount; wideLaneCount++) {
+              const fillLaneCount = 1;
+              const laneWidthIn = (wideLaneCount * 36) + 18;
+              if (laneWidthIn > maxLaneWidthIn + 0.0001) continue;
+
+              const coverage = (widePattern.coverageSqFt * wideLaneCount) + fillPattern.coverageSqFt;
+              const matCount = (widePattern.matCount * wideLaneCount) + fillPattern.matCount;
+              const cart = mergePatternCart([
+                { pattern: widePattern, laneCount: wideLaneCount },
+                { pattern: fillPattern, laneCount: fillLaneCount }
+              ]);
+
+              considerCandidate({
+                coverage,
+                matCount,
+                avgCoverage: coverage / matCount,
+                laneWidthIn,
+                widthTypeCount: 2,
+                distinctSkuCount: cart.length,
+                laneCount: wideLaneCount + fillLaneCount,
+                laneFillRangeFt: 0,
+                lanePatternTypeCount: widePattern.distinctSkuCount === fillPattern.distinctSkuCount && widePattern.laneLengthFt === fillPattern.laneLengthFt ? 1 : 2,
+                cart,
+                isPartial: coverage < targetSqFt
+              });
+            }
+          });
+        });
+      }
+
+      return best;
+    }
+
+    function buildCleanLanePatterns(widthProducts, maxRunFt) {
+      const patternsByLength = new Map();
+      const maxSegmentsPerLane = Math.min(4, Math.floor(maxRunFt / Math.min(...widthProducts.map(p => p.lengthFt))) || 1);
+
+      function addPattern(items) {
+        const laneLengthFt = items.reduce((sum, item) => sum + item.lengthFt, 0);
+        if (laneLengthFt <= 0 || laneLengthFt > maxRunFt + 0.0001) return;
+
+        const roundedLength = Math.round(laneLengthFt * 1000) / 1000;
+        const grouped = new Map();
+        items.forEach(product => {
+          const existing = grouped.get(product.sku);
+          if (existing) existing.qty += 1;
+          else grouped.set(product.sku, { product, qty: 1 });
+        });
+
+        const pattern = {
+          laneLengthFt,
+          coverageSqFt: items.reduce((sum, product) => sum + product.coverageSqFt, 0),
+          matCount: items.length,
+          distinctSkuCount: grouped.size,
+          items: Array.from(grouped.values()).sort((a, b) => b.product.lengthFt - a.product.lengthFt)
+        };
+
+        const current = patternsByLength.get(roundedLength);
+        if (!current || isBetterLanePattern(pattern, current)) {
+          patternsByLength.set(roundedLength, pattern);
+        }
+      }
+
+      function recurse(startIndex, items, lengthSoFar) {
+        if (items.length > 0) addPattern(items);
+        if (items.length >= maxSegmentsPerLane) return;
+
+        for (let i = startIndex; i < widthProducts.length; i++) {
+          const product = widthProducts[i];
+          const nextLength = lengthSoFar + product.lengthFt;
+          if (nextLength > maxRunFt + 0.0001) continue;
+          recurse(i, [...items, product], nextLength);
+        }
+      }
+
+      recurse(0, [], 0);
+      return Array.from(patternsByLength.values());
+    }
+
+    function isBetterLanePattern(candidate, currentBest) {
+      if (candidate.matCount < currentBest.matCount) return true;
+      if (candidate.matCount > currentBest.matCount) return false;
+
+      if (candidate.distinctSkuCount < currentBest.distinctSkuCount) return true;
+      if (candidate.distinctSkuCount > currentBest.distinctSkuCount) return false;
+
+      return candidate.coverageSqFt > currentBest.coverageSqFt;
+    }
+
+    function isBetterRepeatedLaneCart(candidate, currentBest, targetSqFt) {
+      const candidateFitPct = targetSqFt ? Math.abs(candidate.coverage - targetSqFt) / targetSqFt : Infinity;
+      const currentFitPct = targetSqFt ? Math.abs(currentBest.coverage - targetSqFt) / targetSqFt : Infinity;
+
+      if (candidateFitPct < currentFitPct) return true;
+      if (candidateFitPct > currentFitPct) return false;
+
+      const candidateOver = candidate.coverage >= targetSqFt;
+      const currentOver = currentBest.coverage >= targetSqFt;
+      if (candidateOver && !currentOver) return true;
+      if (!candidateOver && currentOver) return false;
+
+      if (candidate.matCount < currentBest.matCount) return true;
+      if (candidate.matCount > currentBest.matCount) return false;
+
+      if (candidate.distinctSkuCount < currentBest.distinctSkuCount) return true;
+      if (candidate.distinctSkuCount > currentBest.distinctSkuCount) return false;
+
+      return candidate.laneCount < currentBest.laneCount;
     }
 
     function findBestCleanPhysicalAlternateCart(eligible, targetSqFt, settings, maxLaneWidthIn, maxRunFt) {
@@ -1159,7 +1687,7 @@
 
       if (!eligible.length) {
         return buildOrientationUnavailableResult(inputs, orientation, targetSqFt, [
-          'This direction does not have eligible WarmStep mats for the selected voltage and dimensions.'
+          `This direction does not have eligible ${activeProductLine.name} mats for the selected voltage and dimensions.`
         ]);
       }
 
@@ -1171,7 +1699,7 @@
 
       if (!candidate) {
         return buildOrientationUnavailableResult(inputs, orientation, targetSqFt, [
-          'This direction does not produce a valid WarmStep mat fit within the current room dimensions and tolerance settings.'
+          `This direction does not produce a valid ${activeProductLine.name} mat fit within the current room dimensions and tolerance settings.`
         ]);
       }
 
@@ -1183,7 +1711,7 @@
       if (isPatchworkPartialRecommendation(candidate)) {
         return buildOrientationUnavailableResult(inputs, orientation, targetSqFt, [
           'This direction would require an awkward patchwork-style mat layout, so it should be reviewed by ThermoSoft before ordering.',
-          'WarmStep mats cannot be shortened and should not run under permanent fixtures.'
+          `${activeProductLine.name} mats cannot be shortened and should not run under permanent fixtures.`
         ]);
       }
 
@@ -1753,7 +2281,7 @@
         : `Mats run up and down along the ${formatNumber(roomWidthFt)} ft dimension`;
 
       const svg = `
-        <svg viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Suggested WarmStep layout preview">
+        <svg viewBox="0 0 ${viewWidth} ${viewHeight}" role="img" aria-label="Suggested ${activeProductLine.name} layout preview">
           <rect x="${padLeft}" y="${padTop}" width="${drawingWidth}" height="${drawingHeight}" rx="12" fill="#f8fafc" stroke="${roomStroke}" stroke-width="2.2"></rect>
           ${svgParts.join('')}
           <text x="${padLeft + drawingWidth / 2}" y="${padTop - 24}" text-anchor="middle" font-size="16" font-weight="800" fill="#1f2933">${escapeHtml(roomLabel)}</text>
@@ -1840,7 +2368,7 @@
         return `
           <div class="system-note">
             <strong>Next step required</strong>
-            Please send us a drawing, sketch, photo, or marked-up floor plan before ordering mats for this layout type. This allows us to review the space and recommend the right WarmStep mat plan.
+            Please send us a drawing, sketch, photo, or marked-up floor plan before ordering mats for this layout type. This allows us to review the space and recommend the right ${activeProductLine.name} mat plan.
           </div>
         `;
       }
@@ -1850,7 +2378,7 @@
       return `
         <div class="system-note">
           <strong style="color:#d84a2b; font-size:18px;">Complete system reminder</strong>
-          <strong>This recommendation is for WarmStep heating mats only and is intended as a planning estimate, not a guarantee of fit or a final installation plan. Please confirm all mat sizes, quantities, placement, thermostat requirements, and accessories before completing your purchase.</strong> A complete floor heating system also requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
+          <strong>This recommendation is for ${activeProductLine.name} heating mats only and is intended as a planning estimate, not a guarantee of fit or a final installation plan. Please confirm all mat sizes, quantities, placement, thermostat requirements, and accessories before completing your purchase.</strong> A complete floor heating system also requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
         </div>
       `;
     }
@@ -1866,7 +2394,7 @@
       const showPerpendicularWarning = requiresPerpendicularLayoutNote(installType);
       const layoutWarning = showPerpendicularWarning ? `
         <div class="naildown-tab-warning">
-          <strong>${escapeHtml(installType)} layout note</strong>
+          <strong>${escapeHtml(installType)} Layout Requirement</strong>
           Mats must run perpendicular to the flooring boards. Confirm the direction before ordering.
         </div>
       ` : '';
@@ -1874,7 +2402,7 @@
       return `
         <div class="layout-tab-row">
           ${layoutWarning}
-          <div class="layout-tabs" role="tablist" aria-label="WarmStep layout options">
+          <div class="layout-tabs" role="tablist" aria-label="${activeProductLine.name} layout options">
             ${result.layoutOptions.map(option => `
               <button class="layout-tab-btn ${option.optionKey === activeLayoutTab ? 'active' : ''}" type="button" data-layout-option="${option.optionKey}" role="tab" aria-selected="${option.optionKey === activeLayoutTab ? 'true' : 'false'}">
                 ${escapeHtml(option.tabLabel || option.optionKey)}
@@ -1894,6 +2422,35 @@
 
     function renderResults(result) {
       const displayResult = getActiveLayoutResult(result);
+
+      if (displayResult.unsupportedInstallType) {
+        resultsEl.innerHTML = `
+          <div class="product-route-box">
+            <h3>${escapeHtml(activeProductLine.unsupportedInstallHeadline || displayResult.status)}</h3>
+            <p>${escapeHtml(activeProductLine.unsupportedInstallBody || '')}</p>
+            <p><strong>Selected install type:</strong> ${escapeHtml(displayResult.installType || '-')}</p>
+            <div class="route-actions">
+              <a class="route-link" href="${escapeHtml(getCalculatorLineUrl('warmstep'))}">Explore WarmStep</a>
+              <button class="secondary route-button-secondary" type="button" id="changeInstallTypeBtn">Change Install Type</button>
+              <button class="secondary route-button-secondary" type="button" id="routeContactBtn">Contact ThermoSoft</button>
+            </div>
+          </div>
+        `;
+
+        const changeInstallTypeBtn = document.getElementById('changeInstallTypeBtn');
+        if (changeInstallTypeBtn) {
+          changeInstallTypeBtn.addEventListener('click', function () {
+            const installTypeEl = document.getElementById('installType');
+            installTypeEl.value = activeProductLine.allowedInstallTypes[0] || 'Glued';
+            installTypeEl.focus();
+          });
+        }
+
+        const routeContactBtn = document.getElementById('routeContactBtn');
+        if (routeContactBtn) routeContactBtn.addEventListener('click', openLayoutHelpModal);
+        return;
+      }
+
       const isError = displayResult.cart.length === 0 && displayResult.status !== 'Valid recommendation';
       const isWarning = displayResult.status !== 'Valid recommendation';
       const cartRows = displayResult.cart.map(item => {
@@ -1999,6 +2556,10 @@
     }
 
     function calculateLineAmps(item) {
+      const qty = Number(item.qty) || 0;
+      if (item.amps !== undefined && item.amps !== null && item.amps !== '') {
+        return (Number(item.amps) || 0) * qty;
+      }
       const volts = Number(item.voltage) || 0;
       return volts ? calculateLineWatts(item) / volts : 0;
     }
@@ -2076,9 +2637,9 @@
       const projectLines = buildProjectEmailLines(inputs);
       const recommendationLines = buildRecommendationEmailLines(lastRecommendation);
 
-      const subject = 'WarmStep Layout Review Request';
+      const subject = `${activeProductLine.name} Layout Review Request`;
       const body = [
-        'WarmStep Layout Review Request',
+        `${activeProductLine.name} Layout Review Request`,
         '',
         'Contact Information',
         `Name: ${name}`,
@@ -2159,7 +2720,12 @@
       resultsEl.innerHTML = '<div class="results-empty">Enter project details and generate a recommendation.</div>';
     }
 
+    applyStateFromQueryParams();
     updateFieldVisibility();
+
+    if (shouldAutoGenerateFromQueryParams()) {
+      document.getElementById('calcForm').dispatchEvent(new Event('submit', { cancelable: true }));
+    }
   </script>
 </body>
 </html>
