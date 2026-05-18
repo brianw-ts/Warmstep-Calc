@@ -489,11 +489,6 @@
 
 
     .layout-tab-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
       margin: 0 0 16px;
       border-bottom: 1px solid var(--line);
       padding-bottom: 10px;
@@ -508,21 +503,21 @@
     }
 
     .naildown-tab-warning {
-      flex: 1 1 230px;
-      max-width: 320px;
+      width: 100%;
       border: 1px solid var(--warning-border);
       background: var(--warning);
       border-radius: 12px;
-      padding: 9px 11px;
+      padding: 10px 12px;
       color: #7c2d12;
-      font-size: 12px;
+      font-size: 12.5px;
       line-height: 1.35;
       font-weight: 700;
+      margin: 0 0 10px;
     }
 
     .naildown-tab-warning strong {
       display: block;
-      font-size: 12.5px;
+      font-size: 13px;
       margin-bottom: 2px;
     }
 
@@ -642,7 +637,6 @@
       .hero, .calculator { grid-template-columns: 1fr; }
       .summary { grid-template-columns: 1fr; }
       .field-grid { grid-template-columns: 1fr; }
-      .naildown-tab-warning { max-width: none; flex-basis: 100%; }
     }
   </style>
 </head>
@@ -690,10 +684,13 @@
               </select>
             </div>
             <div class="field">
-              <label for="nailDown">Nail-down/assist or Glue-Assist?</label>
-              <select id="nailDown" required>
-                <option value="No" selected>No</option>
-                <option value="Yes">Yes</option>
+              <label for="installType">Install Type</label>
+              <select id="installType" required>
+                <option value="Glued" selected>Glued</option>
+                <option value="Floating">Floating</option>
+                <option value="Nail Down">Nail Down</option>
+                <option value="Nail Assist">Nail Assist</option>
+                <option value="Glue Assist">Glue Assist</option>
               </select>
             </div>
           </div>
@@ -725,7 +722,7 @@
           </div>
 
           <div class="actions" id="calcActions">
-            <button class="primary" type="submit" id="generateBtn">Generate Recommendation</button>
+            <button class="primary" type="submit" id="generateBtn">Generate Options</button>
             <button class="secondary" type="button" id="resetBtn">Reset</button>
           </div>
           <p class="small-note" id="systemNote">Final installation layout should be reviewed before ordering. This calculator recommends heating mats only; thermostat and accessory options should be confirmed before purchase.</p>
@@ -856,6 +853,11 @@
     let lastRecommendation = null;
     let activeLayoutTab = 'recommended';
 
+    function requiresPerpendicularLayoutNote(installType) {
+      return ['Nail Down', 'Nail Assist', 'Glue Assist'].includes(installType);
+    }
+
+
     roomShapeEl.addEventListener('change', updateFieldVisibility);
     document.getElementById('resetBtn').addEventListener('click', resetForm);
     document.getElementById('openLayoutHelpBtn').addEventListener('click', openLayoutHelpModal);
@@ -894,7 +896,7 @@
       layoutHelpCta.classList.toggle('hidden', !simple);
 
       const generateBtn = document.getElementById('generateBtn');
-      if (generateBtn) generateBtn.textContent = 'Generate Recommendation';
+      if (generateBtn) generateBtn.textContent = 'Generate Options';
 
       if (!simple) {
         lastRecommendation = null;
@@ -910,10 +912,12 @@
     }
 
     function readInputs() {
+      const installType = document.getElementById('installType').value;
       return {
         roomShape: document.getElementById('roomShape').value,
         voltage: Number(document.getElementById('voltage').value),
-        nailDown: document.getElementById('nailDown').value === 'Yes',
+        installType,
+        nailDown: requiresPerpendicularLayoutNote(installType),
         heatedLengthFt: Number(document.getElementById('heatedLength').value),
         heatedWidthFt: Number(document.getElementById('heatedWidth').value),
         estimatedSqFt: getNumberValue('estimatedSqFt'),
@@ -999,14 +1003,14 @@
 
       const alternate = orientationResults.find(option => option.layoutOrientation !== recommended.layoutOrientation) || null;
       recommended.optionKey = 'recommended';
-      recommended.tabLabel = 'Recommended Layout';
-      recommended.layoutPreviewTitle = 'Recommended layout concept';
+      recommended.tabLabel = 'Option 1 Layout';
+      recommended.layoutPreviewTitle = 'Option 1 layout concept';
 
       const layoutOptions = [recommended];
       if (alternate) {
         alternate.optionKey = 'alternate';
-        alternate.tabLabel = 'Alternate Layout';
-        alternate.layoutPreviewTitle = alternate.cart && alternate.cart.length ? 'Alternate layout concept' : 'Alternate layout unavailable';
+        alternate.tabLabel = 'Option 2 Layout';
+        alternate.layoutPreviewTitle = alternate.cart && alternate.cart.length ? 'Option 2 layout concept' : 'Alternate layout unavailable';
         layoutOptions.push(alternate);
       }
 
@@ -1087,6 +1091,7 @@
         requiresLayoutReview: false,
         showContactAssistance: false,
         nailDown: inputs.nailDown,
+        installType: inputs.installType,
         warnings,
         _candidate: best
       };
@@ -1114,6 +1119,7 @@
         requiresLayoutReview: false,
         showContactAssistance: true,
         nailDown: inputs.nailDown,
+        installType: inputs.installType,
         warnings,
         _candidate: null
       };
@@ -1705,7 +1711,7 @@
       return `
         <div class="system-note">
           <strong style="color:#d84a2b; font-size:18px;">Complete system reminder</strong>
-          <strong>This recommendation is for WarmStep heating mats only.</strong> A complete floor heating system also requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
+          <strong>This recommendation is for WarmStep heating mats only and is intended as a planning estimate, not a guarantee of fit or a final installation plan. Please confirm all mat sizes, quantities, placement, thermostat requirements, and accessories before completing your purchase.</strong> A complete floor heating system requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
         </div>
       `;
     }
@@ -1717,16 +1723,18 @@
 
     function buildLayoutTabsHtml(result) {
       if (!result || !result.layoutOptions || result.layoutOptions.length < 2) return '';
-      const showNailDownWarning = result.layoutOptions.some(option => option.nailDown);
-      const nailDownWarning = showNailDownWarning ? `
+      const installType = result.installType || (result.layoutOptions.find(option => option.installType) || {}).installType || '';
+      const showPerpendicularWarning = requiresPerpendicularLayoutNote(installType);
+      const layoutWarning = showPerpendicularWarning ? `
         <div class="naildown-tab-warning">
-          <strong>Nail-down layout note</strong>
-          Mats must run perpendicular to the flooring boards. Confirm the direction before ordering.
+          <strong>${escapeHtml(installType)} layout note</strong>
+          Mats must run perpendicular to the flooring boards. Confirm direction and select the option that meets this requirement before adding to cart.
         </div>
       ` : '';
 
       return `
         <div class="layout-tab-row">
+          ${layoutWarning}
           <div class="layout-tabs" role="tablist" aria-label="WarmStep layout options">
             ${result.layoutOptions.map(option => `
               <button class="layout-tab-btn ${option.optionKey === activeLayoutTab ? 'active' : ''}" type="button" data-layout-option="${option.optionKey}" role="tab" aria-selected="${option.optionKey === activeLayoutTab ? 'true' : 'false'}">
@@ -1735,7 +1743,6 @@
               </button>
             `).join('')}
           </div>
-          ${nailDownWarning}
         </div>
       `;
     }
@@ -1959,7 +1966,7 @@
       const lines = [
         `Room shape: ${inputs.roomShape}`,
         `Voltage: ${inputs.voltage || '-'}V`,
-        `Nail-down flooring: ${inputs.nailDown ? 'Yes' : 'No'}`
+        `Install type: ${inputs.installType || '-'}`
       ];
 
       if (inputs.roomShape === 'Open Floor Plan/Rectangular with No Obstacles') {
