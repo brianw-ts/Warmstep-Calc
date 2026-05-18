@@ -981,42 +981,43 @@
         }
       ];
 
-      const orientationResults = orientations.map(orientation =>
-        buildOrientationRecommendation(inputs, orientation, targetSqFt)
-      ).filter(Boolean);
+      const orientationResults = orientations.map(orientation => {
+        const standardOption = buildOrientationRecommendation(inputs, orientation, targetSqFt);
+        const physicalOption = buildPhysicalAlternateRecommendation(inputs, orientation, targetSqFt);
 
-      const validOrientationResults = orientationResults.filter(option => option.cart && option.cart.length && !option.requiresLayoutReview);
+        // Every rectangular room should try to show both directions. Use the normal
+        // recommendation when it produces a cart. If it fails or the physical fallback
+        // covers more area, show the fallback rather than hiding the direction.
+        if (physicalOption && (!standardOption || !standardOption.cart || !standardOption.cart.length || physicalOption.recommendedCoverage > standardOption.recommendedCoverage)) {
+          return physicalOption;
+        }
 
-      if (!validOrientationResults.length) {
+        return standardOption;
+      }).filter(Boolean);
+
+      const viableOrientationResults = orientationResults.filter(option => option.cart && option.cart.length && !option.requiresLayoutReview);
+
+      if (!viableOrientationResults.length) {
         return errorResult('Layout review required', [
           'The entered dimensions do not produce a clean WarmStep mat layout using standard mat sizes. Please contact ThermoSoft for assistance or send us your layout so we can recommend the right mat plan.',
           'WarmStep mats cannot be shortened and should not run under permanent fixtures, so final placement should be confirmed before ordering.'
         ], targetSqFt, true, true);
       }
 
-      let recommended = validOrientationResults[0];
-      validOrientationResults.slice(1).forEach(candidate => {
+      let recommended = viableOrientationResults[0];
+      viableOrientationResults.slice(1).forEach(candidate => {
         if (isBetterOrientationRecommendation(candidate, recommended, targetSqFt)) {
           recommended = candidate;
         }
       });
 
       let alternate = orientationResults.find(option => option.layoutOrientation !== recommended.layoutOrientation) || null;
-      const alternateOrientation = orientations.find(option => option.name !== recommended.layoutOrientation) || null;
-      if (alternateOrientation) {
-        const physicalAlternate = buildPhysicalAlternateRecommendation(inputs, alternateOrientation, targetSqFt);
-        if (physicalAlternate && (!alternate || !alternate.cart || !alternate.cart.length || physicalAlternate.recommendedCoverage > alternate.recommendedCoverage)) {
-          alternate = physicalAlternate;
-        }
-      }
 
-      // Re-rank after the Option 2 physical fallback is built.
-      // Previously, the recommended option was selected before the cleaner physical
-      // fallback was added, so a closer alternate could remain stuck as Option 2.
-      if (alternate && alternate.cart && alternate.cart.length && isBetterOrientationRecommendation(alternate, recommended, targetSqFt)) {
-        const previousRecommended = recommended;
-        recommended = alternate;
-        alternate = previousRecommended;
+      // If the room is square, both orientations may be visually identical but the tool
+      // should still show Option 2 so users can compare both directions instead of seeing
+      // the alternate disappear.
+      if (!alternate && orientationResults.length > 1) {
+        alternate = orientationResults.find(option => option !== recommended) || null;
       }
 
       recommended.optionKey = 'recommended';
@@ -1849,7 +1850,7 @@
       return `
         <div class="system-note">
           <strong style="color:#d84a2b; font-size:18px;">Complete system reminder</strong>
-          <strong>This recommendation is for WarmStep heating mats only.</strong> A complete floor heating system also requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
+          <strong>This recommendation is for WarmStep heating mats only and is intended as a planning estimate, not a guarantee of fit or a final installation plan. Please confirm all mat sizes, quantities, placement, thermostat requirements, and accessories before completing your purchase.</strong> A complete floor heating system also requires a compatible thermostat and may require additional accessories based on your installation. After adding to cart, you will be taken back to the product page where you can review these options or <a href="#" id="contactThermoSoftLink">contact ThermoSoft</a> for help designing your full system.
         </div>
       `;
     }
